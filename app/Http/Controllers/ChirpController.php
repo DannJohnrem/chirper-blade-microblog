@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Chirp;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\RedirectResponse;
 
 class ChirpController extends Controller
 {
@@ -17,10 +18,10 @@ class ChirpController extends Controller
 
         // dd(Chirp::with('user')->latest()->get());
 
-        return view('pages.chirps.index',[
-            "chirps" => Chirp::with('user')
+        return view('pages.comment.index',[
+            "comments" => Chirp::with('user')
                             ->latest()
-                            ->get(),
+                            ->paginate(3),
         ]);
 
     }
@@ -44,7 +45,7 @@ class ChirpController extends Controller
 
         $request->user()->chirps()->create($validate);
 
-        return redirect(route('chirps.index'));
+        return redirect(route('comment.index'));
     }
 
     /**
@@ -58,17 +59,29 @@ class ChirpController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Chirp $chirp)
+    public function edit(Chirp $chirp): View
     {
-        //
+        Gate::authorize('update', $chirp);
+
+        return view('pages.comment.edit', [
+            'comment' => $chirp,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Chirp $chirp)
+    public function update(Request $request, Chirp $chirp): RedirectResponse
     {
-        //
+        Gate::authorize('update', $chirp);
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:255',
+        ]);
+
+        $chirp->update($validated);
+
+        return redirect()->route('comment.index');
     }
 
     /**
